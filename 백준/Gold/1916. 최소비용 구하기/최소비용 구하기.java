@@ -5,114 +5,94 @@ import java.util.ArrayList;
 import java.util.PriorityQueue;
 import java.util.StringTokenizer;
 
+class minNode implements Comparable<minNode> {
+    private int key; // 도착지점의 번호
+    private int weight; // 도착지점까지의 가중치
+
+    public minNode(int k, int w){
+        key = k;
+        weight = w;
+    }
+
+    public int getKey(){
+        return this.key;
+    }
+
+    public int getWeight(){
+        return this.weight;
+    }
+
+    @Override
+    public int compareTo(minNode minNode) {
+        if (weight < minNode.weight) return -1;
+        return 1;
+    } // 가장 짧은 거리 목록을 뽑을때 minHeap을 사용하게 되는데...
+
+}
+
+
 class Main {
-    final static int Infinity = Integer.MAX_VALUE;
+    public static final int INFINITY = Integer.MAX_VALUE;
+    private static int[] dijkstra(int K, ArrayList<ArrayList<minNode>> graph, int[] note){
+        PriorityQueue<minNode> minHeap = new PriorityQueue<>();
+        minHeap.add(new minNode(K, 0));
+
+        note[K] = 0;
+
+        while(!minHeap.isEmpty()){
+            minNode node = minHeap.poll();
+            int w = node.getWeight();
+            int k = node.getKey();
+            if (note[k] >= w){
+                for(int i=0; i<graph.get(k).size(); i++){
+                    ArrayList<minNode> arr = graph.get(k); // arr는 연결되어있는 이웃 노드들의 정보가 들어있다.
+                    minNode neighborNode = arr.get(i);
+                    int cost = note[k] + neighborNode.getWeight();
+
+                    if(cost < note[neighborNode.getKey()]){ // 기존에 있었던 것보다 가까운 것이면,
+                        note[neighborNode.getKey()] = cost;
+                        minHeap.add(new minNode(neighborNode.getKey(), cost)); // minHeap에 넣어준
+                    }
+                }
+            }
+        }
+        return note;
+    }
 
     public static void main(String[] args) throws IOException {
         BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
         StringTokenizer st = new StringTokenizer(br.readLine());
-        int V = Integer.parseInt(st.nextToken()); // 정점 개수
+        int Ver = Integer.parseInt(st.nextToken()); // 정점의 개수
         st = new StringTokenizer(br.readLine());
-        int E = Integer.parseInt(st.nextToken()); // 간선 개수
+        int Edge = Integer.parseInt(st.nextToken()); // 간선의 개수
 
+        ArrayList<ArrayList<minNode>> gr = new ArrayList<>();
 
-        ArrayList<ArrayList<Edge>> graph = new ArrayList<>();
-
-        for(int i=0; i<V+1; i++){ // 1~V까지 사용하기 위해 graph 초기화
-            graph.add(new ArrayList<>());
+        for(int i=0; i<Ver+1; i++){ // get(u)로 접근하기 위해 V+1 갯수만큼 초기화
+            gr.add(new ArrayList<>());
         }
 
-        /* graph 만들기 - Adjacency list */
-        for(int i=0; i<E; i++){ // 간선이 들어오기 때문에개 간선 수만큼 반복
+        for(int i=0; i<Edge; i++){ // 그래프 만들기
             st = new StringTokenizer(br.readLine());
-            int u = Integer.parseInt(st.nextToken()); // 시작 정점
-            int v = Integer.parseInt(st.nextToken()); // 도착 정점
+            int u = Integer.parseInt(st.nextToken()); // 시작지점
+            int v = Integer.parseInt(st.nextToken()); // 도착지점
             int w = Integer.parseInt(st.nextToken()); // 가중치
-            graph.get(u).add(new Edge(v, w));
+            gr.get(u).add(new minNode(v, w));
         }
-        /* graph 만들기 */
 
+        int[] note = new int[Ver+1];
+        for(int i=0; i<note.length; i++){
+            note[i] = INFINITY;
+        }
+        
         st = new StringTokenizer(br.readLine());
         int K = Integer.parseInt(st.nextToken()); // 시작 정점의 번호
         int ans = Integer.parseInt(st.nextToken());
 
+        note = dijkstra(K, gr, note);
 
-        /* 시작 지점은 0으로 설정하고 나머지는 Infinity로 설정*/
-        int[] answer = new int[V+1];
-        for(int i=0; i<V+1; i++){
-            answer[i] = Infinity;
-        }
-        answer[K] = 0;
-        /* 시작 지점은 0으로 설정하고 나머지는 Infinity로 설정*/
-
-        answer = dijkstra(graph, answer, K);
-
-        System.out.println(answer[ans]);
+        System.out.println(note[ans]);
 
     }
 
-    public static int[] dijkstra(ArrayList<ArrayList<Edge>> graph, int[] answer, int K){
-        PriorityQueue<Node> minValue = new PriorityQueue<>();
-        minValue.add(new Node(K, 0)); // 시작 값 처음에 넣어주기
-
-        while(!minValue.isEmpty()){
-            Node curr = minValue.poll();
-            int cost = curr.getCost();
-            int currNode = curr.getNode();
-
-            if(cost > answer[currNode]) continue; // cost가 가장 작은 것으로 기록 되어있는거보다 크다면 continue
-
-            for(int i=0; i<graph.get(currNode).size(); i++){
-                Edge neighbor = graph.get(currNode).get(i);
-                int neighborNode = neighbor.getNode();
-                int neighborWeight = neighbor.getWeight();
-                int checkCost = neighborWeight + answer[currNode]; // 자기 자신(가장 작은)의 가중치와 이웃 노드의 가중치를 더해서 비교하게 된다.
-
-                if(checkCost < answer[neighborNode]){ // checkCost(현재)랑 answer[neighborNode]를 비교해본다.
-                    answer[neighborNode] = checkCost;
-                    minValue.add(new Node(neighborNode, checkCost));
-                }
-            }
-        }
-        return answer;
-    }
-}
-
-class Edge {
-    private int node; // 도착 정점
-    private int weight; // 가중치
-
-    public Edge(int v, int w){
-        node = v;
-        weight = w;
-    }
-    public int getNode(){
-        return node;
-    }
-    public int getWeight(){
-        return weight;
-    }
-}
-
-class Node implements Comparable<Node> {
-    private int node; // 도착 정점의 넘버
-    private int cost; // source로부터의 가중치
-
-    public Node(int node, int cost){
-        this.node = node;
-        this.cost = cost;
-    }
-
-    public int getCost(){
-        return cost;
-    }
-    public int getNode(){
-        return node;
-    }
-
-    @Override
-    public int compareTo(Node node) { // PriorityQueue에서 정렬을 하려면 필요함
-        if(cost < node.cost) return -1;
-        return 1;
-    }
 }
